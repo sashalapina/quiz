@@ -10,6 +10,7 @@ export function Quiz() {
     const [scoreDate, setScoreData] = useState({ score: null, total: null});
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedOption, setSelectedOption] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     let getResourse = async (url) => {
         const response = await fetch(url);
@@ -20,18 +21,6 @@ export function Quiz() {
 
         return await response.json();
     }
-
-    useEffect(() => {
-        let getQuestions = async () => {
-            try {
-                const result = await getResourse(`https://peppercoding.ru/quiz/${id}`);
-                setQuiz(result);
-            } catch (error) {
-                console.error(error);
-            }
-        }
-        getQuestions();
-    },[id]);
 
     const handleOptionChange = async (event) => {
         setSelectedOption(event.target.value);
@@ -63,10 +52,28 @@ export function Quiz() {
         navigate('/');
     }
 
-    return (
-        <>
-        {scoreDate.score !== null ? (
-            <>
+    useEffect(() => {
+        if (!quiz) {
+            let getQuestions = async () => {
+                try {
+                    const result = await getResourse(`https://peppercoding.ru/quiz/${id}`);
+                    setQuiz(result);
+                    setIsLoading(false);
+                } catch (error) {
+                    console.error(error);
+                    setIsLoading(false);
+                }
+            }
+            getQuestions();
+        }
+    }, [id, quiz]);
+
+    if (isLoading) {
+        return <div className='quiz-container loader'></div>
+    }
+
+    if (scoreDate.score !== null) {
+        return (
                 <div className='quiz-container'>
                     <h2 className='quiz-title'>{quiz.name}</h2>
                     <div className='quiz-score-container'>
@@ -74,23 +81,22 @@ export function Quiz() {
                         <button className='quiz-exit-btn' onClick={handleGoToMainClick}>Играть снова</button>
                     </div>
                 </div>
-            </>
-        ) : (quiz ? (
-            <>
-            <div className='quiz-container'>
+        )
+    }
+
+    return (
+        <div className='quiz-container'>
             <h2 className='quiz-title'>{quiz.name}</h2>
                 <div className='quiz-question-container'>
                     <div id="myProgress">
                         <div id="myBar" style={{
-                    width: `${100 / quiz.questions.length * currentQuestionIndex}%`
-                }}></div>
+                    width: `${100 / quiz.questions.length * currentQuestionIndex}%`}}></div>
                     </div>
                     <h3 className='quiz-question-title'>{currentQuestionIndex + 1}. {quiz.questions[currentQuestionIndex].question}</h3>
                     <form className='quiz-form'>
                         <ul className='list-reset quiz-list'>
                             {quiz.questions[currentQuestionIndex].options.map((option, index) => (
-                            <li key={index}
-                            onClick={handleOptionChange}>
+                            <li key={index}>
                                 <label>
                                     <input
                                         className='quiz-question-option-input'
@@ -98,6 +104,7 @@ export function Quiz() {
                                         name="answer"
                                         value={option}
                                         checked={selectedOption === option}
+                                        onClick={handleOptionChange}
                                     />
                                     {option}
                                 </label>
@@ -106,12 +113,7 @@ export function Quiz() {
                         </ul>
                     </form>
                 </div>
-            </div>   
-            </>) : (
-                <div className='quiz-container loader'></div>
-        )
-    )}
-        </>
+        </div>
     )
 }
 
